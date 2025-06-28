@@ -20,7 +20,7 @@ These complications go unnoticed because of:
 
 ---
 
-## 💡 Our 2-in-1 Solution: Suraksha-AI
+## 💡 Our 2-in-1 Solution: AI-nemia
 
 ### 🤖 1. AI-Based Anemia Detector
 
