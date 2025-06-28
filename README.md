@@ -1,8 +1,8 @@
-# 🤖 Suraksha-AI: Guarding Motherhood with Intelligence
+# 🤖 AI-nemia Guarding Motherhood with Intelligence
 
 ## 🌟 Overview
 
-**Suraksha-AI** is a machine learning-powered health monitoring system designed to reduce maternal mortality by detecting **hypertensive disorders** and **anemia** using non-invasive methods in low-resource settings. Our mission is to ensure **safe pregnancies** through early and intelligent health monitoring, especially in rural or underserved areas.
+**AI-nemia** is a machine learning-powered health monitoring system designed to reduce maternal mortality by detecting **hypertensive disorders** and **anemia** using non-invasive methods in low-resource settings. Our mission is to ensure **safe pregnancies** through early and intelligent health monitoring, especially in rural or underserved areas.
 
 ---
 
@@ -42,7 +42,7 @@ These complications go unnoticed because of:
 
 ---
 
-## 🔁 How Suraksha-AI Works (Pipeline)
+## 🔁 How AI-nemia Works (Pipeline)
 
 📸 Take photo of lower eyelid/nail bed  
 ↓  
@@ -73,7 +73,7 @@ These complications go unnoticed because of:
 
 ## 📁 Folder Structure
 
-suraksha-ai/
+ai-nemia/
 │
 ├── backend/
 │ └── anemia_rf_model.pkl # Trained ML model
@@ -87,38 +87,17 @@ suraksha-ai/
 ├── requirements.txt # Python dependencies
 └── TempCodeRunnerFile.py # Temporary script file
 
-
 ---
 
-## 🧪 How to Run Locally
-
-1. Clone the repo  
-
-git clone https://github.com/your-username/suraksha-ai.git
-cd suraksha-ai
-
-2. Install dependencies
-
-
-pip install -r requirements.txt
-
-3. Run the app
-
-
-python app/app.py
-
-
-4. Open in browser
-   Go to [http://127.0.0.1:5000](http://127.0.0.1:5000)
-
----
 
 ## 👩‍💻 Team CloudCoder
 
 * Soumya Rai
 * Vanshika Pandey
+* Parth Babbar
+* Saina Suhag
 
-We participated in **ClodeClash 2.0 Hackathon**, aiming to create real-world solutions for maternal health.
+We are participating in **HackArena**, aiming to create real-world solutions for maternal health.
 
 ---
 
@@ -140,10 +119,4 @@ We participated in **ClodeClash 2.0 Hackathon**, aiming to create real-world sol
 
 ---
 
-## 🔗 Useful Links
-
-* [Presentation Slides](https://www.canva.com/design/DAGqIoSQXW8/igmnEN9ccqxdGMc0CiniXw/edit?utm_content=DAGqIoSQXW8&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
-* [Link](http://127.0.0.1:5500/SURAKSH/frontend/index.html)
-
----
 
