@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-nemia - Health Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="page-container">
+        <header class="page-header">
+            <button class="back-btn" onclick="navigateTo('dashboard.html')">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 data-en="Health Assistant" data-hi="स्वास्थ्य सहायक">Health Assistant</h1>
+            <div class="header-controls">
+                <div class="language-selector">
+                    <select id="languageSelect" onchange="changeLanguage()">
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी</option>
+                        <option value="te">తెలుగు</option>
+                    </select>
+                </div>
+                <button class="clear-chat-btn" onclick="clearChat()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </header>
+        
+        <div class="chatbot-content">
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-message">
+                    <div class="bot-message">
+                        <div class="bot-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p data-en="Hello! I'm your AI health assistant. I can help you with questions about anemia, nutrition, pregnancy care, and government health schemes. You can type or use voice input." data-hi="नमस्ते! मैं आपका AI स्वास्थ्य सहायक हूं। मैं एनीमिया, पोषण, गर्भावस्था देखभाल और सरकारी स्वास्थ्य योजनाओं के बारे में प्रश्नों में आपकी सहायता कर सकता हूं। आप टाइप कर सकते हैं या वॉइस इनपुट का उपयोग कर सकते हैं।">Hello! I'm your AI health assistant. I can help you with questions about anemia, nutrition, pregnancy care, and government health schemes. You can type or use voice input.</p>
+                            <button class="play-audio-btn" onclick="playBotMessage(this)">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="suggested-questions">
+                    <h4 data-en="Try asking:" data-hi="पूछने की कोशिश करें:">Try asking:</h4>
+                    <div class="suggestion-chips">
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="What foods help increase iron?" data-hi="कौन से खाद्य पदार्थ आयरन बढ़ाने में मदद करते हैं?">What foods help increase iron?</button>
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="Should I worry if I feel dizzy?" data-hi="अगर मुझे चक्कर आ रहे हैं तो क्या मुझे चिंता करनी चाहिए?">Should I worry if I feel dizzy?</button>
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="How to apply for Janani Suraksha Yojana?" data-hi="जननी सुरक्षा योजना के लिए आवेदन कैसे करें?">How to apply for Janani Suraksha Yojana?</button>
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="When should I visit PHC?" data-hi="मुझे PHC कब जाना चाहिए?">When should I visit PHC?</button>
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="What is AI-nemia detection?" data-hi="AI-नेमिया डिटेक्शन क्या है?">What is AI-nemia detection?</button>
+                        <button class="suggestion-chip" onclick="sendSuggestedMessage(this)" data-en="Find nearest hospital" data-hi="निकटतम अस्पताल खोजें">Find nearest hospital</button>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Chat messages will be populated here -->
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="voice-status" id="voiceStatus" style="display: none;">
+                    <div class="listening-animation">
+                        <div class="pulse"></div>
+                        <div class="pulse"></div>
+                        <div class="pulse"></div>
+                    </div>
+                    <p data-en="Listening..." data-hi="सुन रहे हैं...">Listening...</p>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" id="messageInput" data-placeholder-en="Type your message..." data-placeholder-hi="अपना संदेश टाइप करें..." placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        let isListening = false;
+        let recognition = null;
+        let chatHistory = [];
+        
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = function() {
+                isListening = true;
+                document.getElementById('voiceStatus').style.display = 'block';
+                document.getElementById('voiceBtn').classList.add('listening');
+            };
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('messageInput').value = transcript;
+                sendMessage();
+            };
+            
+            recognition.onend = function() {
+                isListening = false;
+                document.getElementById('voiceStatus').style.display = 'none';
+                document.getElementById('voiceBtn').classList.remove('listening');
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                document.getElementById('voiceStatus').style.display = 'none';
+                document.getElementById('voiceBtn').classList.remove('listening');
+            };
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChatHistory();
+            updateLanguage();
+            setRecognitionLanguage();
+        });
+        
+        function setRecognitionLanguage() {
+            if (recognition) {
+                const currentLang = localStorage.getItem('app_language') || 'en';
+                const langCodes = {
+                    'en': 'en-US',
+                    'hi': 'hi-IN',
+                    'te': 'te-IN'
+                };
+                recognition.lang = langCodes[currentLang] || 'en-US';
+            }
+        }
+        
+        function updateLanguage() {
+            const currentLang = localStorage.getItem('app_language') || 'en';
+            document.getElementById('languageSelect').value = currentLang;
+            changeLanguage(currentLang);
+            setRecognitionLanguage();
+        }
+        
+        function toggleVoiceInput() {
+            if (!recognition) {
+                const currentLang = localStorage.getItem('app_language') || 'en';
+                const notSupportedText = currentLang === 'hi' ? 
+                    'वॉइस इनपुट इस ब्राउज़र में समर्थित नहीं है' :
+                    'Voice input not supported in this browser';
+                showNotification(notSupportedText, 'error');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function sendSuggestedMessage(button) {
+            const currentLang = localStorage.getItem('app_language') || 'en';
+            const message = button.getAttribute(`data-${currentLang}`) || button.textContent;
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+        
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            messageInput.value = '';
+            
+            // Generate bot response
+            setTimeout(() => {
+                const botResponse = generateBotResponse(message);
+                addMessageToChat(botResponse, 'bot');
+                saveChatHistory();
+            }, 1000);
+        }
+        
+        function addMessageToChat(message, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (sender === 'bot') {
+                messageDiv.innerHTML = `
+                    <div class="bot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>${message}</p>
+                        <button class="play-audio-btn" onclick="playBotMessage(this)">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Add to chat history
+            chatHistory.push({ message, sender, timestamp: new Date().toISOString() });
+        }
+        
+        function generateBotResponse(userMessage) {
+            const currentLang = localStorage.getItem('app_language') || 'en';
+            const lowerMessage = userMessage.toLowerCase();
+            
+            // Define responses in multiple languages
+            const responses = {
+                iron_foods: {
+                    en: "Great question! Iron-rich foods include: spinach, lentils (dal), jaggery, dates, pomegranate, beetroot, and lean meats. For better absorption, eat vitamin C rich foods like citrus fruits with iron-rich meals. Also try: ragi, amaranth leaves, and sesame seeds.",
+                    hi: "बहुत अच्छा सवाल! आयरन से भरपूर खाद्य पदार्थों में शामिल हैं: पालक, दाल, गुड़, खजूर, अनार, चुकंदर, और दुबला मांस। बेहतर अवशोषण के लिए, आयरन युक्त भोजन के साथ विटामिन सी युक्त खाद्य पदार्थ जैसे खट्टे फल खाएं। इसके अलावा रागी, चौलाई के पत्ते, और तिल भी लें।"
+                },
+                dizziness: {
+                    en: "Dizziness during pregnancy can be concerning. It may indicate anemia, low blood pressure, or dehydration. Please consult your healthcare provider immediately, especially if accompanied by weakness, pale skin, or rapid heartbeat. In the meantime, sit down, drink water, and avoid sudden movements.",
+                    hi: "गर्भावस्था के दौरान चक्कर आना चिंताजनक हो सकता है। यह एनीमिया, निम्न रक्तचाप, या निर्जलीकरण का संकेत हो सकता है। कृपया तुरंत अपने स्वास्थ्य प्रदाता से सलाह लें, खासकर यदि कमजोरी, पीली त्वचा, या तेज़ दिल की धड़कन के साथ हो। इस बीच, बैठ जाएं, पानी पिएं, और अचानक हलचल से बचें।"
+                },
+                jsy_scheme: {
+                    en: "Janani Suraksha Yojana (JSY) provides cash assistance for institutional delivery. To apply: 1) Visit your nearest Anganwadi center, 2) Carry Aadhar card, BPL card, and pregnancy documents, 3) Register during pregnancy. You'll receive ₹1,400 (rural) or ₹1,000 (urban) after delivery. <a href='https://nhm.gov.in/index1.php?lang=1&level=2&sublinkid=841&lid=309' target='_blank'>Apply online here</a>",
+                    hi: "जननी सुरक्षा योजना (JSY) संस्थागत प्रसव के लिए नकद सहायता प्रदान करती है। आवेदन के लिए: 1) अपने निकटतम आंगनवाड़ी केंद्र जाएं, 2) आधार कार्ड, BPL कार्ड, और गर्भावस्था के दस्तावेज ले जाएं, 3) गर्भावस्था के दौरान पंजीकरण कराएं। प्रसव के बाद आपको ₹1,400 (ग्रामीण) या ₹1,000 (शहरी) मिलेंगे। <a href='https://nhm.gov.in/index1.php?lang=1&level=2&sublinkid=841&lid=309' target='_blank'>यहां ऑनलाइन आवेदन करें</a>"
+                },
+                pmmvy_scheme: {
+                    en: "Pradhan Mantri Matru Vandana Yojana (PMMVY) provides ₹5,000 in 3 installments for first-time mothers. Eligibility: Age 19+, first living child, not in regular government employment. <a href='https://pmmvy.nic.in/' target='_blank'>Apply at PMMVY portal</a>",
+                    hi: "प्रधान मंत्री मातृ वंदना योजना (PMMVY) पहली बार माताओं के लिए 3 किस्तों में ₹5,000 प्रदान करती है। पात्रता: 19+ आयु, पहला जीवित बच्चा, नियमित सरकारी नौकरी में नहीं। <a href='https://pmmvy.nic.in/' target='_blank'>PMMVY पोर्टल पर आवेदन करें</a>"
+                },
+                ayushman_scheme: {
+                    en: "Ayushman Bharat provides ₹5 lakh health insurance per family per year. Covers maternity care, pre/post hospitalization. Check eligibility and apply at <a href='https://pmjay.gov.in/' target='_blank'>PM-JAY website</a>",
+                    hi: "आयुष्मान भारत प्रति परिवार प्रति वर्ष ₹5 लाख स्वास्थ्य बीमा प्रदान करता है। मातृत्व देखभाल, अस्पताल में भर्ती से पहले/बाद कवर करता है। पात्रता जांचें और <a href='https://pmjay.gov.in/' target='_blank'>PM-JAY वेबसाइट</a> पर आवेदन करें"
+                },
+                phc_visit: {
+                    en: "Visit PHC immediately if you experience: severe headaches, blurred vision, swelling in hands/feet, severe abdominal pain, bleeding, or reduced fetal movement. For routine care, visit monthly in first 6 months, bi-weekly in 7-8 months, and weekly in 9th month.",
+                    hi: "PHC तुरंत जाएं यदि आप अनुभव करें: गंभीर सिरदर्द, धुंधली दृष्टि, हाथ/पैर में सूजन, गंभीर पेट दर्द, रक्तस्राव, या भ्रूण की गति में कमी। नियमित देखभाल के लिए, पहले 6 महीनों में मासिक, 7-8 महीनों में द्विसाप्ताहिक, और 9वें महीने में साप्ताहिक जाएं।"
+                },
+                ai_detection: {
+                    en: "AI-nemia detection uses your phone's camera to analyze nail beds, inner eyelids, or tongue for signs of anemia. The AI looks for color changes that may indicate low hemoglobin levels. It's a screening tool - always confirm results with proper blood tests at your nearest PHC.",
+                    hi: "AI-नेमिया डिटेक्शन आपके फोन के कैमरे का उपयोग करके नाखून, भीतरी पलकों, या जीभ का विश्लेषण करके एनीमिया के संकेतों की जांच करता है। AI उन रंग परिवर्तनों की तलाश करता है जो कम हीमोग्लोबिन स्तर का संकेत दे सकते हैं। यह एक स्क्रीनिंग टूल है - हमेशा अपने निकटतम PHC में उचित रक्त परीक्षण से परिणामों की पुष्टि करें।"
+                },
+                camera_help: {
+                    en: "To take photos in AI-nemia app: 1) Go to AI-nemia Detection page, 2) Select body part (nail/eye/tongue), 3) Tap 'Take Photo' - this will open your camera app, 4) Take a clear photo with good lighting, 5) Return to app for analysis.",
+                    hi: "AI-नेमिया ऐप में फोटो लेने के लिए: 1) AI-नेमिया डिटेक्शन पेज पर जाएं, 2) शरीर का हिस्सा चुनें (नाखून/आंख/जीभ), 3) 'फोटो लें' पर टैप करें - यह आपका कैमरा ऐप खोलेगा, 4) अच्छी रोशनी में स्पष्ट फोटो लें, 5) विश्लेषण के लिए ऐप पर वापस आएं।"
+                },
+                hospital_routes: {
+                    en: "I can help you find nearby hospitals! Please allow location access when prompted. Based on your location, I'll provide directions to the nearest government hospitals, PHCs, and emergency services. You can also call 108 for emergency ambulance services.",
+                    hi: "मैं आपको निकटतम अस्पताल खोजने में मदद कर सकता हूं! कृपया जब पूछा जाए तो स्थान पहुंच की अनुमति दें। आपके स्थान के आधार पर, मैं निकटतम सरकारी अस्पतालों, PHC, और आपातकालीन सेवाओं के लिए दिशा-निर्देश प्रदान करूंगा। आप आपातकालीन एम्बुलेंस सेवाओं के लिए 108 पर भी कॉल कर सकते हैं।"
+                },
+                nutrition_tips: {
+                    en: "For healthy pregnancy nutrition: 1) Eat 5-6 small meals daily, 2) Include protein in every meal, 3) Take prescribed iron and folic acid tablets, 4) Drink 8-10 glasses of water, 5) Avoid junk food, raw meat, and alcohol. Focus on green leafy vegetables, fruits, whole grains, and dairy products.",
+                    hi: "स्वस्थ गर्भावस्था पोषण के लिए: 1) दिन में 5-6 छोटे भोजन करें, 2) हर भोजन में प्रोटीन शामिल करें, 3) निर्धारित आयरन और फोलिक एसिड टैबलेट लें, 4) 8-10 गिलास पानी पिएं, 5) जंक फूड, कच्चा मांस, और शराब से बचें। हरी पत्तेदार सब्जियों, फलों, साबुत अनाज, और डेयरी उत्पादों पर ध्यान दें।"
+                },
+                emergency: {
+                    en: "For medical emergencies: Call 108 (ambulance), 102 (health helpline), or contact your nearest PHC immediately. If experiencing severe symptoms like heavy bleeding, severe abdominal pain, or difficulty breathing, don't delay - seek immediate medical attention!",
+                    hi: "चिकित्सा आपातकाल के लिए: 108 (एम्बुलेंस), 102 (स्वास्थ्य हेल्पलाइन) पर कॉल करें, या तुरंत अपने निकटतम PHC से संपर्क करें। यदि गंभीर लक्षण जैसे भारी रक्तस्राव, गंभीर पेट दर्द, या सांस लेने में कठिनाई हो रही है, तो देरी न करें - तुरंत चिकित्सा सहायता लें!"
+                },
+                default: {
+                    en: "I understand you're asking about health-related topics. While I can provide general information about anemia, nutrition, pregnancy care, and government schemes, please remember that I'm not a substitute for professional medical advice. For specific health concerns, always consult with your healthcare provider or visit your nearest PHC.",
+                    hi: "मैं समझता हूं कि आप स्वास्थ्य संबंधी विषयों के बारे में पूछ रहे हैं। जबकि मैं एनीमिया, पोषण, गर्भावस्था देखभाल, और सरकारी योजनाओं के बारे में सामान्य जानकारी प्रदान कर सकता हूं, कृपया याद रखें कि मैं पेशेवर चिकित्सा सलाह का विकल्प नहीं हूं। विशिष्ट स्वास्थ्य चिंताओं के लिए, हमेशा अपने स्वास्थ्य प्रदाता से सलाह लें या अपने निकटतम PHC जाएं।"
+                }
+            };
+            
+            // Enhanced keyword matching for responses
+            if (lowerMessage.includes('iron') || lowerMessage.includes('food') || lowerMessage.includes('nutrition') || lowerMessage.includes('आयरन') || lowerMessage.includes('खाना') || lowerMessage.includes('पोषण')) {
+                if (lowerMessage.includes('tip') || lowerMessage.includes('advice') || lowerMessage.includes('सुझाव') || lowerMessage.includes('सलाह')) {
+                    return responses.nutrition_tips[currentLang];
+                }
+                return responses.iron_foods[currentLang];
+            } else if (lowerMessage.includes('dizzy') || lowerMessage.includes('dizziness') || lowerMessage.includes('चक्कर') || lowerMessage.includes('weakness') || lowerMessage.includes('कमजोरी')) {
+                return responses.dizziness[currentLang];
+            } else if (lowerMessage.includes('janani') || lowerMessage.includes('jsy') || lowerMessage.includes('जननी')) {
+                return responses.jsy_scheme[currentLang];
+            } else if (lowerMessage.includes('pmmvy') || lowerMessage.includes('matru vandana') || lowerMessage.includes('मातृ वंदना')) {
+                return responses.pmmvy_scheme[currentLang];
+            } else if (lowerMessage.includes('ayushman') || lowerMessage.includes('pmjay') || lowerMessage.includes('आयुष्मान')) {
+                return responses.ayushman_scheme[currentLang];
+            } else if (lowerMessage.includes('phc') || lowerMessage.includes('visit') || lowerMessage.includes('doctor') || lowerMessage.includes('डॉक्टर') || lowerMessage.includes('when')) {
+                return responses.phc_visit[currentLang];
+            } else if (lowerMessage.includes('ai-nemia') || lowerMessage.includes('detection') || lowerMessage.includes('डिटेक्शन')) {
+                return responses.ai_detection[currentLang];
+            } else if (lowerMessage.includes('camera') || lowerMessage.includes('photo') || lowerMessage.includes('कैमरा') || lowerMessage.includes('फोटो')) {
+                return responses.camera_help[currentLang];
+            } else if (lowerMessage.includes('hospital') || lowerMessage.includes('route') || lowerMessage.includes('nearest') || lowerMessage.includes('अस्पताल') || lowerMessage.includes('निकटतम')) {
+                findNearestHospitals();
+                return responses.hospital_routes[currentLang];
+            } else if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent') || lowerMessage.includes('help') || lowerMessage.includes('आपातकाल') || lowerMessage.includes('मदद')) {
+                return responses.emergency[currentLang];
+            } else {
+                return responses.default[currentLang];
+            }
+        }
+        
+        function playBotMessage(button) {
+            const messageText = button.parentElement.querySelector('p').textContent;
+            const currentLang = localStorage.getItem('app_language') || 'en';
+            
+            if ('speechSynthesis' in window) {
+                // Stop any ongoing speech
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(messageText);
+                
+                // Set language for speech
+                const langCodes = {
+                    'en': 'en-US',
+                    'hi': 'hi-IN',
+                    'te': 'te-IN'
+                };
+                utterance.lang = langCodes[currentLang] || 'en-US';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                
+                // Update button during speech
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-stop"></i>';
+                button.onclick = () => {
+                    speechSynthesis.cancel();
+                    button.innerHTML = originalIcon;
+                    button.onclick = () => playBotMessage(button);
+                };
+                
+                utterance.onend = () => {
+                    button.innerHTML = originalIcon;
+                    button.onclick = () => playBotMessage(button);
+                };
+                
+                speechSynthesis.speak(utterance);
+            } else {
+                const currentLang = localStorage.getItem('app_language') || 'en';
+                const notSupportedText = currentLang === 'hi' ? 
+                    'टेक्स्ट-टू-स्पीच इस ब्राउज़र में समर्थित नहीं है' :
+                    'Text-to-speech not supported in this browser';
+                showNotification(notSupportedText, 'error');
+            }
+        }
+        
+        function findNearestHospitals() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Open Google Maps with nearby hospitals
+                        const mapsUrl = `https://www.google.com/maps/search/hospitals+near+me/@${lat},${lng},15z`;
+                        window.open(mapsUrl, '_blank');
+                        
+                        const currentLang = localStorage.getItem('app_language') || 'en';
+                        const successText = currentLang === 'hi' ? 
+                            'Google Maps में निकटतम अस्पताल खोले गए' :
+                            'Opened nearest hospitals in Google Maps';
+                        showNotification(successText);
+                    },
+                    (error) => {
+                        const currentLang = localStorage.getItem('app_language') || 'en';
+                        const errorText = currentLang === 'hi' ? 
+                            'स्थान पहुंच की अनुमति दें या मैन्युअल रूप से खोजें' :
+                            'Please allow location access or search manually';
+                        showNotification(errorText, 'error');
+                        
+                        // Fallback to general hospital search
+                        window.open('https://www.google.com/maps/search/hospitals', '_blank');
+                    }
+                );
+            } else {
+                // Fallback for browsers without geolocation
+                window.open('https://www.google.com/maps/search/hospitals', '_blank');
+            }
+        }
+        
+        function saveChatHistory() {
+            localStorage.setItem('chatbot_history', JSON.stringify(chatHistory));
+        }
+        
+        function loadChatHistory() {
+            const saved = localStorage.getItem('chatbot_history');
+            if (saved) {
+                chatHistory = JSON.parse(saved);
+                const chatMessages = document.getElementById('chatMessages');
+                
+                chatHistory.forEach(chat => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${chat.sender}-message`;
+                    
+                    if (chat.sender === 'bot') {
+                        messageDiv.innerHTML = `
+                            <div class="bot-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p>${chat.message}</p>
+                                <button class="play-audio-btn" onclick="playBotMessage(this)">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        messageDiv.innerHTML = `
+                            <div class="message-content">
+                                <p>${chat.message}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    chatMessages.appendChild(messageDiv);
+                });
+                
+                if (chatHistory.length > 0) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            }
+        }
+        
+        function clearChat() {
+            const currentLang = localStorage.getItem('app_language') || 'en';
+            const confirmText = currentLang === 'hi' ? 
+                'क्या आप वाकई चैट इतिहास साफ़ करना चाहते हैं?' :
+                'Are you sure you want to clear chat history?';
+            
+            if (confirm(confirmText)) {
+                chatHistory = [];
+                localStorage.removeItem('chatbot_history');
+                document.getElementById('chatMessages').innerHTML = '';
+                
+                const clearedText = currentLang === 'hi' ? 
+                    'चैट इतिहास साफ़ कर दिया गया' :
+                    'Chat history cleared';
+                showNotification(clearedText);
+            }
+        }
+    </script>
+</body>
+</html>
